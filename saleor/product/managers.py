@@ -222,7 +222,7 @@ class ProductsQueryset(models.QuerySet):
     def prefetched_for_webhook(self, single_object=True):
         common_fields = (
             "attributes__values",
-            "attributes__assignment__attribute",
+            "attributes",
             "media",
             "variants__attributes__values",
             "variants__attributes__assignment__attribute",
