@@ -84,6 +84,8 @@ Shipping methods can be removed by the user after it has been assigned to a chec
   - `accountUpdate`, `accountAddressCreate`, `accountAddressUpdate`, `addressCreate`, `AccountAddressUpdate`,
   - `checkoutShippingAddressUpdate`, `checkoutBillingAddressUpdate`, `shopAddressUpdate`, `warehouseUpdate`
   - Add `metadata` to `AddressInput` field
+- - Add `AttributeBulkUpdate` mutation - #13532 by @SzymJ
+
 
 ### Saleor Apps
 
