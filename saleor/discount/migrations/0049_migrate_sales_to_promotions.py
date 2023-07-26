@@ -6,33 +6,12 @@ from typing import Dict, List
 import graphene
 from django.db.models import Exists, OuterRef
 
-from ..models import (
-    CheckoutLineDiscount,
-    OrderLineDiscount,
-    Promotion,
-    PromotionRule,
-    PromotionTranslation,
-    Sale,
-    SaleChannelListing,
-    SaleTranslation,
-)
-
 
 # The batch of size 100 takes ~1.2 second and consumes ~25MB memory at peak
 BATCH_SIZE = 100
 
 
-@dataclass
-class RuleInfo:
-    rule: PromotionRule
-    sale_id: int
-    channel_id: int
-
-    def add_rule_to_channel(self):
-        self.rule.channels.add(self.channel_id)
-
-
-def convert_sale_into_promotion(sale):
+def convert_sale_into_promotion(Promotion, sale):
     return Promotion(
         name=sale.name,
         old_sale_id=sale.id,
@@ -43,7 +22,7 @@ def convert_sale_into_promotion(sale):
     )
 
 
-def create_promotion_rule(sale, promotion, discount_value=None):
+def create_promotion_rule(PromotionRule, sale, promotion, discount_value=None):
     return PromotionRule(
         name="",
         promotion=promotion,
@@ -89,14 +68,16 @@ def create_catalogue_predicate(collection_ids, category_ids, product_ids, varian
     return predicate
 
 
-def migrate_sales_to_promotions(sales_pks, saleid_promotion_map):
+def migrate_sales_to_promotions(Sale, Promotion, sales_pks, saleid_promotion_map):
     if sales := Sale.objects.filter(pk__in=sales_pks).order_by("pk"):
         for sale in sales:
-            saleid_promotion_map[sale.id] = convert_sale_into_promotion(sale)
+            saleid_promotion_map[sale.id] = convert_sale_into_promotion(Promotion, sale)
         Promotion.objects.bulk_create(saleid_promotion_map.values())
 
 
 def migrate_sale_listing_to_promotion_rules(
+    RuleInfo,
+    PromotionRule,
     sale_listings,
     saleid_promotion_map,
     rules_info,
@@ -107,7 +88,10 @@ def migrate_sale_listing_to_promotion_rules(
             rules_info.append(
                 RuleInfo(
                     rule=create_promotion_rule(
-                        sale_listing.sale, promotion, sale_listing.discount_value
+                        PromotionRule,
+                        sale_listing.sale,
+                        promotion,
+                        sale_listing.discount_value,
                     ),
                     sale_id=sale_listing.sale_id,
                     channel_id=sale_listing.channel_id,
@@ -120,16 +104,20 @@ def migrate_sale_listing_to_promotion_rules(
             rule_info.add_rule_to_channel()
 
 
-def migrate_sales_to_promotion_rules(sales_pks, saleid_promotion_map):
+def migrate_sales_to_promotion_rules(
+    Sale, PromotionRule, sales_pks, saleid_promotion_map
+):
     if sales := Sale.objects.filter(pk__in=sales_pks).order_by("pk"):
         rules: List[PromotionRule] = []
         for sale in sales:
             promotion = saleid_promotion_map[sale.id]
-            rules.append(create_promotion_rule(sale, promotion))
+            rules.append(create_promotion_rule(PromotionRule, sale, promotion))
         PromotionRule.objects.bulk_create(rules)
 
 
-def migrate_translations(sales_pks, saleid_promotion_map):
+def migrate_translations(
+    SaleTranslation, PromotionTranslation, sales_pks, saleid_promotion_map
+):
     if sale_translations := SaleTranslation.objects.filter(sale_id__in=sales_pks):
         promotion_translations = [
             PromotionTranslation(
@@ -142,7 +130,9 @@ def migrate_translations(sales_pks, saleid_promotion_map):
         PromotionTranslation.objects.bulk_create(promotion_translations)
 
 
-def migrate_checkout_line_discounts(sales_pks, rule_by_channel_and_sale):
+def migrate_checkout_line_discounts(
+    CheckoutLineDiscount, sales_pks, rule_by_channel_and_sale
+):
     if checkout_line_discounts := CheckoutLineDiscount.objects.filter(
         sale_id__in=sales_pks
     ).select_related("line__checkout"):
@@ -159,7 +149,9 @@ def migrate_checkout_line_discounts(sales_pks, rule_by_channel_and_sale):
         )
 
 
-def migrate_order_line_discounts(sales_pks, rule_by_channel_and_sale):
+def migrate_order_line_discounts(
+    OrderLineDiscount, sales_pks, rule_by_channel_and_sale
+):
     if order_line_discounts := OrderLineDiscount.objects.filter(
         sale_id__in=sales_pks
     ).select_related("line__order"):
@@ -212,7 +204,25 @@ def queryset_in_batches(queryset):
         start_pk = pks[-1]
 
 
-def convert_sales_to_promotions():
+def run_migration(apps, _schema_editor):
+    Promotion = apps.get_model("discount", "Promotion")
+    PromotionRule = apps.get_model("discount", "PromotionRule")
+    SaleChannelListing = apps.get_model("discount", "SaleChannelListing")
+    SaleTranslation = apps.get_model("discount", "SaleTranslation")
+    Sale = apps.get_model("discount", "Sale")
+    PromotionTranslation = apps.get_model("discount", "PromotionTranslation")
+    CheckoutLineDiscount = apps.get_model("discount", "CheckoutLineDiscount")
+    OrderLineDiscount = apps.get_model("discount", "OrderLineDiscount")
+
+    @dataclass
+    class RuleInfo:
+        rule: PromotionRule
+        sale_id: int
+        channel_id: int
+
+        def add_rule_to_channel(self):
+            self.rule.channels.add(self.channel_id)
+
     sales_listing = SaleChannelListing.objects.order_by("sale_id")
     for sale_listing_batch_pks in channel_listing_in_batches(sales_listing):
         sales_listing_batch = (
@@ -231,17 +241,27 @@ def convert_sales_to_promotions():
         saleid_promotion_map: Dict[int, Promotion] = {}
         rules_info: List[RuleInfo] = []
 
-        migrate_sales_to_promotions(sales_batch_pks, saleid_promotion_map)
+        migrate_sales_to_promotions(
+            Sale, Promotion, sales_batch_pks, saleid_promotion_map
+        )
         migrate_sale_listing_to_promotion_rules(
+            RuleInfo,
+            PromotionRule,
             sales_listing_batch,
             saleid_promotion_map,
             rules_info,
         )
-        migrate_translations(sales_batch_pks, saleid_promotion_map)
+        migrate_translations(
+            SaleTranslation, PromotionTranslation, sales_batch_pks, saleid_promotion_map
+        )
 
         rule_by_channel_and_sale = get_rule_by_channel_sale(rules_info)
-        migrate_checkout_line_discounts(sales_batch_pks, rule_by_channel_and_sale)
-        migrate_order_line_discounts(sales_batch_pks, rule_by_channel_and_sale)
+        migrate_checkout_line_discounts(
+            CheckoutLineDiscount, sales_batch_pks, rule_by_channel_and_sale
+        )
+        migrate_order_line_discounts(
+            OrderLineDiscount, sales_batch_pks, rule_by_channel_and_sale
+        )
 
     # migrate sales not listed in any channel
     sales_not_listed = Sale.objects.filter(
@@ -249,13 +269,15 @@ def convert_sales_to_promotions():
     ).order_by("pk")
     for sales_batch_pks in queryset_in_batches(sales_not_listed):
         saleid_promotion_map = {}
-        migrate_sales_to_promotions(sales_batch_pks, saleid_promotion_map)
-        migrate_sales_to_promotion_rules(sales_batch_pks, saleid_promotion_map)
-        migrate_translations(sales_batch_pks, saleid_promotion_map)
-
-
-def run_migration(_apps, _schema_editor):
-    convert_sales_to_promotions()
+        migrate_sales_to_promotions(
+            Sale, Promotion, sales_batch_pks, saleid_promotion_map
+        )
+        migrate_sales_to_promotion_rules(
+            Sale, PromotionRule, sales_batch_pks, saleid_promotion_map
+        )
+        migrate_translations(
+            SaleTranslation, PromotionTranslation, sales_batch_pks, saleid_promotion_map
+        )
 
 
 class Migration(migrations.Migration):
