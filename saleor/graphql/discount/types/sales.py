@@ -138,9 +138,7 @@ class Sale(ChannelContextTypeWithMetadata, ModelObjectType[models.Sale]):
                 )
 
     @staticmethod
-    def resolve_channel_listings(
-        root: ChannelContext[models.Promotion], info: ResolveInfo
-    ):
+    def resolve_channel_listings(root: ChannelContext[models.Promotion]):
         listings = []
         if rules := root.node.rules.all():
             for rule in rules:

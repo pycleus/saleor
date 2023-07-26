@@ -1,5 +1,6 @@
-from django.db.models import QuerySet
+from django.db.models import Exists, OuterRef, QuerySet
 
+from ...channel.models import Channel
 from ...discount import models
 from ..channel import ChannelContext, ChannelQsContext
 from .filters import filter_sale_search, filter_voucher_search
@@ -32,10 +33,16 @@ def resolve_sale(id, channel):
 def resolve_sales(_info, channel_slug, **kwargs) -> ChannelQsContext:
     qs = models.Promotion.objects.filter(old_sale_id__isnull=False)
     if channel_slug:
-        qs = qs.filter(rules__channels__slug=channel_slug)
+        channel = Channel.objects.filter(slug=channel_slug)
+        rule_channel = models.PromotionRule.channels.through.objects.filter(
+            channel__in=channel
+        )
+        rules = models.PromotionRule.objects.filter(
+            Exists(rule_channel.filter(promotionrule_id=OuterRef("id")))
+        )
+        qs = qs.filter(Exists(rules.filter(promotion_id=OuterRef("pk"))))
 
     # DEPRECATED: remove filtering by `query` argument when it's removed from the schema
-    # TODO what about this??
     if query := kwargs.get("query"):
         qs = filter_sale_search(qs, None, query)
 

@@ -2,11 +2,11 @@ import decimal
 from typing import List
 
 import django_filters
-from django.db.models import Q
+from django.db.models import Exists, OuterRef, Q
 from django.utils import timezone
 
 from ...discount import DiscountValueType
-from ...discount.models import Promotion, Sale, Voucher, VoucherQueryset
+from ...discount.models import PromotionRule, Sale, Voucher, VoucherQueryset
 from ..core.doc_category import DOC_CATEGORY_DISCOUNTS
 from ..core.filters import (
     GlobalIDMultipleChoiceFilter,
@@ -66,7 +66,8 @@ def filter_started(qs, _, value):
 
 def filter_sale_type(qs, _, value):
     if value in [DiscountValueType.FIXED, DiscountValueType.PERCENTAGE]:
-        qs = qs.filter(rules__reward_value_type=value)
+        rules = PromotionRule.objects.filter(reward_value_type=value)
+        qs = qs.filter(Exists(rules.filter(promotion_id=OuterRef("pk"))))
     return qs
 
 
@@ -77,7 +78,8 @@ def filter_sale_search(qs, _, value):
         return qs.filter(
             Q(name__ilike=value) | Q(rules__reward_value_type__ilike=value)
         )
-    return Promotion.objects.filter(rules__reward_value=value)
+    rules = PromotionRule.objects.filter(reward_value=value)
+    return qs.filter(Exists(rules.filter(promotion_id=OuterRef("pk"))))
 
 
 def filter_voucher_search(qs, _, value):
