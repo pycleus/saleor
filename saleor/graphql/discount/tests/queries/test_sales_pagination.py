@@ -6,7 +6,7 @@ from freezegun import freeze_time
 
 from .....discount import DiscountValueType
 from .....discount.models import Promotion, Sale, SaleChannelListing
-from .....discount.tasks import SaleToPromotionConverter
+from .....discount.sales_converter import SaleToPromotionConverter
 from ....tests.utils import get_graphql_content
 
 

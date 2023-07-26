@@ -398,9 +398,6 @@ class Promotion(ModelWithMetadata):
             date = datetime.now(pytz.utc)
         return (not self.end_date or self.end_date >= date) and self.start_date <= date
 
-    def __str__(self):
-        return self.name
-
 
 class PromotionTranslation(Translation):
     name = models.CharField(max_length=255, null=True, blank=True)

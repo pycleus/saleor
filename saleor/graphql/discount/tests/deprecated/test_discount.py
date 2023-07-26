@@ -2,7 +2,7 @@ import warnings
 
 from .....channel.utils import DEPRECATION_WARNING_MESSAGE
 from .....discount.models import Sale, Voucher
-from .....discount.tasks import SaleToPromotionConverter
+from .....discount.sales_converter import SaleToPromotionConverter
 from ....tests.utils import get_graphql_content
 
 QUERY_SALES_WITH_SORTING_AND_FILTERING = """

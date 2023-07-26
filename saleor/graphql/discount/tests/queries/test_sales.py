@@ -1,4 +1,4 @@
-from saleor.discount.tasks import SaleToPromotionConverter
+from saleor.discount.sales_converter import SaleToPromotionConverter
 
 from ....tests.utils import get_graphql_content
 
