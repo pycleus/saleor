@@ -141,17 +141,23 @@ class Sale(ChannelContextTypeWithMetadata, ModelObjectType[models.Sale]):
     def resolve_channel_listings(
         root: ChannelContext[models.Promotion], info: ResolveInfo
     ):
-        if rule := root.node.rules.first():
-            if channel := rule.channels.first():
-                return [
-                    SaleChannelListing(
-                        # TODO what about id???
-                        id=graphene.Node.to_global_id("SaleChannelListing", rule.id),
-                        channel=channel,
-                        discount_value=rule.reward_value,
-                        currency=channel.currency_code,
-                    )
-                ]
+        listings = []
+        if rules := root.node.rules.all():
+            for rule in rules:
+                if channels := rule.channels.all():
+                    for channel in channels:
+                        listings.append(
+                            SaleChannelListing(
+                                # TODO what about id???
+                                id=graphene.Node.to_global_id(
+                                    "SaleChannelListing", rule.id
+                                ),
+                                channel=channel,
+                                discount_value=rule.reward_value,
+                                currency=channel.currency_code,
+                            )
+                        )
+        return listings
 
     @staticmethod
     def resolve_collections(

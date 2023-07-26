@@ -172,3 +172,50 @@ def test_sales_query_with_channel_slug(
     content = get_graphql_content(response)
 
     assert len(content["data"]["sales"]["edges"]) == 1
+
+
+def test_sales_query_channel_listing(
+    staff_api_client,
+    sale_with_many_channels,
+    permission_manage_discounts,
+    channel_USD,
+    channel_PLN,
+):
+    # given
+    SaleToPromotionConverter.convert_sales_to_promotions()
+    query = """
+        query sales {
+            sales(first: 10) {
+                edges {
+                    node {
+                        channelListings {
+                            id
+                            channel {
+                                slug
+                            }
+                            discountValue
+                            currency
+                        }
+                    }
+                }
+            }
+        }
+        """
+
+    # when
+    response = staff_api_client.post_graphql(
+        query,
+        {},
+        permissions=[permission_manage_discounts],
+    )
+
+    # then
+    content = get_graphql_content(response)
+    data = content["data"]["sales"]["edges"]
+    assert len(data) == 1
+    channel_listings = data[0]["node"]["channelListings"]
+    assert len(channel_listings) == 2
+    assert {listing["channel"]["slug"] for listing in channel_listings} == {
+        channel_PLN.slug,
+        channel_USD.slug,
+    }
