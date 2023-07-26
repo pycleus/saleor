@@ -26,6 +26,10 @@ from ...product.types import (
 )
 from ...translations.fields import TranslationField
 from ...translations.types import SaleTranslation
+from ..dataloaders import (
+    ChannelsByPromotionRuleIdLoader,
+    PromotionRulesByPromotionIdLoader,
+)
 from ..enums import SaleType
 
 
@@ -120,9 +124,13 @@ class Sale(ChannelContextTypeWithMetadata, ModelObjectType[models.Sale]):
         return root.node.created_at
 
     @staticmethod
-    def resolve_type(root: ChannelContext[models.Promotion], _info: ResolveInfo):
-        if rule := root.node.rules.first():
-            return rule.reward_value_type
+    def resolve_type(root: ChannelContext[models.Promotion], info: ResolveInfo):
+        if (
+            rules := PromotionRulesByPromotionIdLoader(info.context)
+            .load(root.node.id)
+            .get()
+        ):
+            return rules[0].reward_value_type
 
     @staticmethod
     def resolve_categories(
@@ -138,11 +146,21 @@ class Sale(ChannelContextTypeWithMetadata, ModelObjectType[models.Sale]):
                 )
 
     @staticmethod
-    def resolve_channel_listings(root: ChannelContext[models.Promotion]):
+    def resolve_channel_listings(
+        root: ChannelContext[models.Promotion], info: ResolveInfo
+    ):
         listings = []
-        if rules := root.node.rules.all():
+        if (
+            rules := PromotionRulesByPromotionIdLoader(info.context)
+            .load(root.node.id)
+            .get()
+        ):
             for rule in rules:
-                if channels := rule.channels.all():
+                if (
+                    channels := ChannelsByPromotionRuleIdLoader(info.context)
+                    .load(rule.id)
+                    .get()
+                ):
                     for channel in channels:
                         listings.append(
                             SaleChannelListing(
@@ -201,16 +219,28 @@ class Sale(ChannelContextTypeWithMetadata, ModelObjectType[models.Sale]):
 
     @staticmethod
     def resolve_discount_value(
-        root: ChannelContext[models.Promotion], _info: ResolveInfo
+        root: ChannelContext[models.Promotion], info: ResolveInfo
     ):
-        if rule := root.node.rules.first():
-            return rule.reward_value
+        if (
+            rules := PromotionRulesByPromotionIdLoader(info.context)
+            .load(root.node.id)
+            .get()
+        ):
+            return rules[0].reward_value
 
     @staticmethod
-    def resolve_currency(root: ChannelContext[models.Promotion], _info: ResolveInfo):
-        if rule := root.node.rules.first():
-            if channel := rule.channels.first():
-                return channel.currency_code
+    def resolve_currency(root: ChannelContext[models.Promotion], info: ResolveInfo):
+        if (
+            rules := PromotionRulesByPromotionIdLoader(info.context)
+            .load(root.node.id)
+            .get()
+        ):
+            if (
+                channels := ChannelsByPromotionRuleIdLoader(info.context)
+                .load(rules[0].id)
+                .get()
+            ):
+                return channels[0].currency_code
 
 
 class SaleCountableConnection(CountableConnection):
