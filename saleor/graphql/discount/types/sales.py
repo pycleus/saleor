@@ -164,10 +164,7 @@ class Sale(ChannelContextTypeWithMetadata, ModelObjectType[models.Sale]):
                     for channel in channels:
                         listings.append(
                             SaleChannelListing(
-                                # TODO what about id???
-                                id=graphene.Node.to_global_id(
-                                    "SaleChannelListing", rule.id
-                                ),
+                                id=rule.old_channel_listing_id,
                                 channel=channel,
                                 discount_value=rule.reward_value,
                                 currency=channel.currency_code,

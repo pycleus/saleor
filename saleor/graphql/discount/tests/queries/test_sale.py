@@ -43,6 +43,7 @@ QUERY_SALE_BY_ID = """
                 }
             }
             channelListings {
+                id
                 discountValue
                 channel {
                     slug
@@ -85,9 +86,13 @@ def test_staff_query_sale(
     assert sale_data["variants"]["edges"][0]["node"]["name"] == variant.name
     assert sale_data["collections"]["edges"][0]["node"]["name"] == collection.name
     assert sale_data["categories"]["edges"][0]["node"]["name"] == category.name
-    assert sale_data["channelListings"][0]["discountValue"] == rule.reward_value
-    assert sale_data["channelListings"][0]["channel"]["slug"] == channel.slug
-    assert sale_data["channelListings"][0]["currency"] == channel.currency_code
+    channel_listing = sale_data["channelListings"][0]
+    assert channel_listing["discountValue"] == rule.reward_value
+    assert channel_listing["channel"]["slug"] == channel.slug
+    assert channel_listing["currency"] == channel.currency_code
+    assert channel_listing["id"] == graphene.Node.to_global_id(
+        "SaleChannelListing", rule.old_channel_listing_id
+    )
 
 
 def test_query_sale_by_app(
