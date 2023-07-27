@@ -3,7 +3,7 @@ from django.utils import timezone
 
 from .....discount import DiscountValueType
 from .....discount.models import Promotion, Sale, SaleChannelListing
-from .....discount.sales_converter import SaleToPromotionConverter
+from .....discount.sales_converter import convert_sales_to_promotions
 from ....tests.utils import assert_graphql_error_with_message, get_graphql_content
 
 
@@ -77,7 +77,7 @@ def sales_for_sorting_with_channels(db, channel_USD, channel_PLN):
         ]
     )
 
-    SaleToPromotionConverter.convert_sales_to_promotions()
+    convert_sales_to_promotions()
     promotions = Promotion.objects.order_by("created_at").all()
 
     promotions[4].save()
@@ -307,7 +307,7 @@ def test_query_sales_with_sort(
             ),
         ]
     )
-    SaleToPromotionConverter.convert_sales_to_promotions()
+    convert_sales_to_promotions()
     variables = {"sort_by": sale_sort}
     staff_api_client.user.user_permissions.add(permission_manage_discounts)
 

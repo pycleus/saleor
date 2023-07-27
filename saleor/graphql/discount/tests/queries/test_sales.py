@@ -1,4 +1,4 @@
-from .....discount.sales_converter import SaleToPromotionConverter
+from .....discount.sales_converter import convert_sales_to_promotions
 from ....tests.utils import get_graphql_content
 
 
@@ -121,7 +121,7 @@ def test_sales_query(
     channel_USD,
     permission_manage_products,
 ):
-    SaleToPromotionConverter.convert_sales_to_promotions()
+    convert_sales_to_promotions()
     query = """
         query sales {
             sales(first: 2) {
@@ -150,7 +150,7 @@ def test_sales_query_with_channel_slug(
     channel_PLN,
     permission_manage_products,
 ):
-    SaleToPromotionConverter.convert_sales_to_promotions()
+    convert_sales_to_promotions()
     query = """
         query sales($channel: String) {
             sales(first: 2, channel: $channel) {
@@ -181,7 +181,7 @@ def test_sales_query_channel_listing(
     channel_PLN,
 ):
     # given
-    SaleToPromotionConverter.convert_sales_to_promotions()
+    convert_sales_to_promotions()
     query = """
         query sales {
             sales(first: 10) {

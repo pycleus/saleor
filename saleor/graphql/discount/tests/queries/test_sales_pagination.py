@@ -6,7 +6,7 @@ from freezegun import freeze_time
 
 from .....discount import DiscountValueType
 from .....discount.models import Promotion, Sale, SaleChannelListing
-from .....discount.sales_converter import SaleToPromotionConverter
+from .....discount.sales_converter import convert_sales_to_promotions
 from ....tests.utils import get_graphql_content
 
 
@@ -54,7 +54,7 @@ def sales_for_pagination(channel_USD):
             for i, sale in enumerate(sales)
         ]
     )
-    SaleToPromotionConverter.convert_sales_to_promotions()
+    convert_sales_to_promotions()
     promotions = Promotion.objects.order_by("created_at").all()
     return promotions
 

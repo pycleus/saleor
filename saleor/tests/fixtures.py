@@ -5509,9 +5509,9 @@ def rule_info(
 
 @pytest.fixture
 def promotion_converted_from_sale(sale):
-    from ..discount.sales_converter import SaleToPromotionConverter
+    from ..discount.sales_converter import convert_sales_to_promotions
 
-    SaleToPromotionConverter.convert_sales_to_promotions()
+    convert_sales_to_promotions()
     return Promotion.objects.filter(old_sale_id=sale.id).last()
 
 

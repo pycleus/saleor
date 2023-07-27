@@ -5,7 +5,7 @@ from django.utils import timezone
 
 from .....discount import DiscountValueType
 from .....discount.models import Promotion, Sale, SaleChannelListing
-from .....discount.sales_converter import SaleToPromotionConverter
+from .....discount.sales_converter import convert_sales_to_promotions
 from ....tests.utils import get_graphql_content
 
 QUERY_SALES_WITH_FILTER = """
@@ -73,7 +73,7 @@ def test_query_sales_with_filter_status(
             for sale in sales
         ]
     )
-    SaleToPromotionConverter.convert_sales_to_promotions()
+    convert_sales_to_promotions()
     variables = {"filter": sale_filter}
 
     # when
@@ -108,7 +108,7 @@ def test_query_sales_with_filter_discount_type(
             Sale(name="Sale2", type=sale_type),
         ]
     )
-    SaleToPromotionConverter.convert_sales_to_promotions()
+    convert_sales_to_promotions()
     variables = {"filter": sale_filter}
 
     # when
@@ -167,7 +167,7 @@ def test_query_sales_with_filter_started(
             for sale in sales
         ]
     )
-    SaleToPromotionConverter.convert_sales_to_promotions()
+    convert_sales_to_promotions()
     variables = {"filter": sale_filter}
 
     # when
@@ -223,7 +223,7 @@ def test_query_sales_with_filter_updated_at(
         ]
     )
 
-    SaleToPromotionConverter.convert_sales_to_promotions()
+    convert_sales_to_promotions()
     promotions = Promotion.objects.all()
     assert len(promotions) == 2
     promotions[0].updated_at = timezone.now().replace(
@@ -281,7 +281,7 @@ def test_query_sales_with_filter_search(
             for i, sale in enumerate(sales)
         ]
     )
-    SaleToPromotionConverter.convert_sales_to_promotions()
+    convert_sales_to_promotions()
     variables = {"filter": sale_filter}
 
     # when
