@@ -5,7 +5,12 @@ from ....discount import models
 from ....permission.enums import DiscountPermissions
 from ....product.models import Category, Collection, Product, ProductVariant
 from ...channel import ChannelQsContext
-from ...channel.types import Channel, ChannelContextType
+from ...channel.types import (
+    Channel,
+    ChannelContext,
+    ChannelContextType,
+    ChannelContextTypeWithMetadata,
+)
 from ...core import ResolveInfo
 from ...core.connection import CountableConnection, create_connection_slice
 from ...core.descriptions import ADDED_IN_31
@@ -50,7 +55,7 @@ class SaleChannelListing(BaseObjectType):
         doc_category = DOC_CATEGORY_DISCOUNTS
 
 
-class Sale(ModelObjectType[models.Sale]):
+class Sale(ChannelContextTypeWithMetadata, ModelObjectType[models.Sale]):
     id = graphene.GlobalID(required=True, description="The ID of the sale.")
     name = graphene.String(required=True, description="The name of the sale.")
     type = SaleType(required=True, description="Type of the sale, fixed or percentage.")
@@ -105,6 +110,7 @@ class Sale(ModelObjectType[models.Sale]):
     currency = graphene.String(description="Currency code for sale.")
 
     class Meta:
+        default_resolver = ChannelContextType.resolver_with_context
         description = (
             "Sales allow creating discounts for categories, collections or products "
             "and are visible to all the customers."
@@ -114,19 +120,25 @@ class Sale(ModelObjectType[models.Sale]):
         doc_category = DOC_CATEGORY_DISCOUNTS
 
     @staticmethod
-    def resolve_created(root: models.Promotion, _info: ResolveInfo):
-        return root.created_at
+    def resolve_created(root: ChannelContext[models.Promotion], _info: ResolveInfo):
+        return root.node.created_at
 
     @staticmethod
-    def resolve_type(root: models.Promotion, info: ResolveInfo):
-        if rules := PromotionRulesByPromotionIdLoader(info.context).load(root.id).get():
+    def resolve_type(root: ChannelContext[models.Promotion], info: ResolveInfo):
+        if (
+            rules := PromotionRulesByPromotionIdLoader(info.context)
+            .load(root.node.id)
+            .get()
+        ):
             return rules[0].reward_value_type
 
     @staticmethod
-    def resolve_categories(root: models.Promotion, info: ResolveInfo, **kwargs):
+    def resolve_categories(
+        root: ChannelContext[models.Promotion], info: ResolveInfo, **kwargs
+    ):
         from ..utils import convert_migrated_sale_catalogue_predicate
 
-        if predicates := convert_migrated_sale_catalogue_predicate(root):
+        if predicates := convert_migrated_sale_catalogue_predicate(root.node):
             if category_ids := predicates.get("categoryPredicate"):
                 qs = Category.objects.filter(id__in=category_ids)
                 return create_connection_slice(
@@ -134,9 +146,15 @@ class Sale(ModelObjectType[models.Sale]):
                 )
 
     @staticmethod
-    def resolve_channel_listings(root: models.Promotion, info: ResolveInfo):
+    def resolve_channel_listings(
+        root: ChannelContext[models.Promotion], info: ResolveInfo
+    ):
         listings = []
-        if rules := PromotionRulesByPromotionIdLoader(info.context).load(root.id).get():
+        if (
+            rules := PromotionRulesByPromotionIdLoader(info.context)
+            .load(root.node.id)
+            .get()
+        ):
             for rule in rules:
                 if (
                     channels := ChannelsByPromotionRuleIdLoader(info.context)
@@ -158,49 +176,65 @@ class Sale(ModelObjectType[models.Sale]):
         return listings
 
     @staticmethod
-    def resolve_collections(root: models.Promotion, info: ResolveInfo, **kwargs):
+    def resolve_collections(
+        root: ChannelContext[models.Promotion], info: ResolveInfo, **kwargs
+    ):
         from ..utils import convert_migrated_sale_catalogue_predicate
 
-        if predicates := convert_migrated_sale_catalogue_predicate(root):
+        if predicates := convert_migrated_sale_catalogue_predicate(root.node):
             if collection_ids := predicates.get("collectionPredicate"):
                 qs = Collection.objects.filter(id__in=collection_ids)
-                qs = ChannelQsContext(qs=qs, channel_slug=None)
+                qs = ChannelQsContext(qs=qs, channel_slug=root.channel_slug)
                 return create_connection_slice(
                     qs, info, kwargs, CollectionCountableConnection
                 )
 
     @staticmethod
-    def resolve_products(root: models.Promotion, info: ResolveInfo, **kwargs):
+    def resolve_products(
+        root: ChannelContext[models.Promotion], info: ResolveInfo, **kwargs
+    ):
         from ..utils import convert_migrated_sale_catalogue_predicate
 
-        if predicates := convert_migrated_sale_catalogue_predicate(root):
+        if predicates := convert_migrated_sale_catalogue_predicate(root.node):
             if product_ids := predicates.get("productPredicate"):
                 qs = Product.objects.filter(id__in=product_ids)
-                qs = ChannelQsContext(qs=qs, channel_slug=None)
+                qs = ChannelQsContext(qs=qs, channel_slug=root.channel_slug)
                 return create_connection_slice(
                     qs, info, kwargs, ProductCountableConnection
                 )
 
     @staticmethod
-    def resolve_variants(root: models.Promotion, info: ResolveInfo, **kwargs):
+    def resolve_variants(
+        root: ChannelContext[models.Promotion], info: ResolveInfo, **kwargs
+    ):
         from ..utils import convert_migrated_sale_catalogue_predicate
 
-        if predicates := convert_migrated_sale_catalogue_predicate(root):
+        if predicates := convert_migrated_sale_catalogue_predicate(root.node):
             if variant_ids := predicates.get("variantPredicate"):
                 qs = ProductVariant.objects.filter(id__in=variant_ids)
-                qs = ChannelQsContext(qs=qs, channel_slug=None)
+                qs = ChannelQsContext(qs=qs, channel_slug=root.channel_slug)
                 return create_connection_slice(
                     qs, info, kwargs, ProductVariantCountableConnection
                 )
 
     @staticmethod
-    def resolve_discount_value(root: models.Promotion, info: ResolveInfo):
-        if rules := PromotionRulesByPromotionIdLoader(info.context).load(root.id).get():
+    def resolve_discount_value(
+        root: ChannelContext[models.Promotion], info: ResolveInfo
+    ):
+        if (
+            rules := PromotionRulesByPromotionIdLoader(info.context)
+            .load(root.node.id)
+            .get()
+        ):
             return rules[0].reward_value
 
     @staticmethod
-    def resolve_currency(root: models.Promotion, info: ResolveInfo):
-        if rules := PromotionRulesByPromotionIdLoader(info.context).load(root.id).get():
+    def resolve_currency(root: ChannelContext[models.Promotion], info: ResolveInfo):
+        if (
+            rules := PromotionRulesByPromotionIdLoader(info.context)
+            .load(root.node.id)
+            .get()
+        ):
             if (
                 channels := ChannelsByPromotionRuleIdLoader(info.context)
                 .load(rules[0].id)

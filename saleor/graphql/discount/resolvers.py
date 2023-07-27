@@ -23,11 +23,14 @@ def resolve_vouchers(info, channel_slug, **kwargs) -> ChannelQsContext:
     return ChannelQsContext(qs=qs, channel_slug=channel_slug)
 
 
-def resolve_sale(id, _channel):
-    return models.Promotion.objects.filter(old_sale_id=id).first()
+def resolve_sale(id, channel):
+    # TODO what about channel
+    # TODO use dataloaders
+    promotion = models.Promotion.objects.filter(old_sale_id=id).first()
+    return ChannelContext(node=promotion, channel_slug=channel) if promotion else None
 
 
-def resolve_sales(_info, channel_slug, **kwargs) -> QuerySet:
+def resolve_sales(_info, channel_slug, **kwargs) -> ChannelQsContext:
     qs = models.Promotion.objects.filter(old_sale_id__isnull=False)
     if channel_slug:
         channel = Channel.objects.filter(slug=channel_slug)
@@ -43,7 +46,7 @@ def resolve_sales(_info, channel_slug, **kwargs) -> QuerySet:
     if query := kwargs.get("query"):
         qs = filter_sale_search(qs, None, query)
 
-    return qs
+    return ChannelQsContext(qs=qs, channel_slug=channel_slug)
 
 
 def resolve_promotion(id):
