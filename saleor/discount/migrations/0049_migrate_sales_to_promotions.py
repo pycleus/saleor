@@ -19,16 +19,21 @@ def convert_sale_into_promotion(Promotion, sale):
         end_date=sale.end_date,
         created_at=sale.created_at,
         updated_at=sale.updated_at,
+        metadata=sale.metadata,
+        private_metadata=sale.private_metadata,
     )
 
 
-def create_promotion_rule(PromotionRule, sale, promotion, discount_value=None):
+def create_promotion_rule(
+    PromotionRule, sale, promotion, discount_value=None, old_channel_listing_id=None
+):
     return PromotionRule(
         name="",
         promotion=promotion,
         catalogue_predicate=create_catalogue_predicate_from_sale(sale),
         reward_value_type=sale.type,
         reward_value=discount_value,
+        old_channel_listing_id=old_channel_listing_id,
     )
 
 
@@ -92,6 +97,7 @@ def migrate_sale_listing_to_promotion_rules(
                         sale_listing.sale,
                         promotion,
                         sale_listing.discount_value,
+                        sale_listing.id,
                     ),
                     sale_id=sale_listing.sale_id,
                     channel_id=sale_listing.channel_id,
