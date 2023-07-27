@@ -4023,13 +4023,13 @@ files = [
 
 [[package]]
 name = "stripe"
-version = "3.5.0"
+version = "5.5.0"
 description = "Python bindings for the Stripe API"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 files = [
-    {file = "stripe-3.5.0-py2.py3-none-any.whl", hash = "sha256:69d5bf4611624a503bcec84a61b1f2a2b874bfc828432e4fd75cd120bcc3efef"},
-    {file = "stripe-3.5.0.tar.gz", hash = "sha256:08f74cae6619d4a7d78f8162ff72bc3e9c913f53ec96ecd5ddc7d823c2e79ddd"},
+    {file = "stripe-5.5.0-py2.py3-none-any.whl", hash = "sha256:b4947da66dbb3de8969004ba6398f9a019c6b1b3ffe6aa88d5b07ac560a52b28"},
+    {file = "stripe-5.5.0.tar.gz", hash = "sha256:04a9732b37a46228ecf0e496163a3edd93596b0e6200029fbc48911638627e19"},
 ]
 
 [package.dependencies]
@@ -4874,4 +4874,4 @@ test = ["pytest"]
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.9"
-content-hash = "4543d128df1e7df907779b2c98bfde8d82605780f6d4bd774e4bb8e42e3d14ab"
+content-hash = "ea7f0e3b6671fc986755a7fed27266c4f05c007fd6b4e5b94b29e754e51dfe8e"
