@@ -2493,7 +2493,7 @@ def test_update_product_with_multiselect_attribute_non_existing_values(
 
     product = product_with_multiple_values_attributes
     product_id = graphene.Node.to_global_id("Product", product.pk)
-    attribute = product.attributes.first().attribute
+    attribute = product.attributes.first()
     attribute_id = graphene.Node.to_global_id("Attribute", attribute.pk)
 
     value_count = AttributeValue.objects.count()
@@ -2543,7 +2543,7 @@ def test_update_product_with_multiselect_attribute_existing_values(
 
     product = product_with_multiple_values_attributes
     product_id = graphene.Node.to_global_id("Product", product.pk)
-    attribute = product.attributes.first().attribute
+    attribute = product.attributes.first()
     attribute_id = graphene.Node.to_global_id("Attribute", attribute.pk)
     attr_value_1 = product.attributes.first().values.all()[0]
     attr_value_id_1 = graphene.Node.to_global_id("AttributeValue", attr_value_1.pk)
@@ -2598,7 +2598,7 @@ def test_update_product_with_multiselect_attribute_new_values_not_created(
 
     product = product_with_multiple_values_attributes
     product_id = graphene.Node.to_global_id("Product", product.pk)
-    attribute = product.attributes.first().attribute
+    attribute = product.attributes.first()
     attribute_id = graphene.Node.to_global_id("Attribute", attribute.pk)
     attr_value_1 = product.attributes.first().values.all()[0]
     attr_value_id_1 = graphene.Node.to_global_id("AttributeValue", attr_value_1.pk)
@@ -2801,7 +2801,7 @@ def test_update_product_with_multiselect_attribute_by_both_id_and_value(
 
     product = product_with_multiple_values_attributes
     product_id = graphene.Node.to_global_id("Product", product.pk)
-    attribute = product.attributes.first().attribute
+    attribute = product.attributes.first()
     attribute_id = graphene.Node.to_global_id("Attribute", attribute.pk)
     attr_value = product.attributes.first().values.all()[0]
     attr_value_id = graphene.Node.to_global_id("AttributeValue", attr_value.pk)
@@ -2844,7 +2844,7 @@ def test_update_product_with_multiselect_attribute_by_id_duplicated(
 
     product = product_with_multiple_values_attributes
     product_id = graphene.Node.to_global_id("Product", product.pk)
-    attribute = product.attributes.first().attribute
+    attribute = product.attributes.first()
     attribute_id = graphene.Node.to_global_id("Attribute", attribute.pk)
     attr_value = product.attributes.first().values.all()[0]
     attr_value_id = graphene.Node.to_global_id("AttributeValue", attr_value.pk)
@@ -2887,7 +2887,7 @@ def test_update_product_with_multiselect_attribute_by_name_duplicated(
 
     product = product_with_multiple_values_attributes
     product_id = graphene.Node.to_global_id("Product", product.pk)
-    attribute = product.attributes.first().attribute
+    attribute = product.attributes.first()
     attribute_id = graphene.Node.to_global_id("Attribute", attribute.pk)
     attr_value_name = product.attributes.first().values.all()[0].name
 

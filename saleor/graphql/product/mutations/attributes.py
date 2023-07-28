@@ -648,6 +648,35 @@ class ProductReorderAttributeValues(BaseReorderAttributeValuesMutation):
         )
 
     @classmethod
+    def perform(
+        cls,
+        instance_id: str,
+        instance_type: str,
+        data: dict,
+        assignment_lookup: str,
+        error_code_enum,
+    ):
+        attribute_id = data["attribute_id"]
+        moves = data["moves"]
+
+        instance = cls.get_instance(instance_id)
+        cls.validate_attribute_assignment(
+            instance, instance_type, attribute_id, error_code_enum
+        )
+        values_m2m = getattr(instance, assignment_lookup)
+
+        try:
+            operations = cls.prepare_operations(moves, values_m2m)
+        except ValidationError as error:
+            error.code = error_code_enum.NOT_FOUND.value
+            raise ValidationError({"moves": error})
+
+        with traced_atomic_transaction():
+            perform_reordering(values_m2m, operations)
+
+        return instance
+
+    @classmethod
     def perform_mutation(cls, _root, _info: ResolveInfo, /, **data):
         product_id = data["product_id"]
         product = cls.perform(
@@ -676,6 +705,31 @@ class ProductReorderAttributeValues(BaseReorderAttributeValuesMutation):
                 }
             )
         return product
+
+    @classmethod
+    def validate_attribute_assignment(
+        cls, instance, instance_type, attribute_id: str, error_code_enum
+    ):
+        """Validate if this attribute_id is assigned to this product."""
+        attribute_pk = cls.get_global_id_or_error(
+            attribute_id, only_type=Attribute, field="attribute_id"
+        )
+
+        attribute_assignment = instance.attributes.filter(
+            attribute_id=attribute_pk
+        ).exists()
+
+        if not attribute_assignment:
+            raise ValidationError(
+                {
+                    "attribute_id": ValidationError(
+                        f"Couldn't resolve to a {instance_type} "
+                        f"attribute: {attribute_id}.",
+                        code=error_code_enum.NOT_FOUND.value,
+                    )
+                }
+            )
+        return attribute_assignment
 
 
 class ProductVariantReorderAttributeValues(BaseReorderAttributeValuesMutation):

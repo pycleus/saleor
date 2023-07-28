@@ -211,7 +211,7 @@ def test_resolve_assigned_attribute_without_values(
     variant = product.variants.get()
 
     # Remove all attributes and values from the product and its variant
-    product.attributesrelated.clear()
+    product.attributes.clear()
     variant.attributesrelated.clear()
 
     # Retrieve the product and variant's attributes

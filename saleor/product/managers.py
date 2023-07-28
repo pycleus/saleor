@@ -148,7 +148,7 @@ class ProductsQueryset(models.QuerySet):
         # product types that have the given attribute associated to them
         associated_values = tuple(
             AttributeProduct.objects.filter(attribute_id=attribute_pk).values_list(
-                "pk", "product_type_id"
+                "attribute_id", "product_type_id"
             )
         )
 
@@ -170,7 +170,7 @@ class ProductsQueryset(models.QuerySet):
                 # Refer to `AttributeProduct`.
                 filtered_attribute=FilteredRelation(
                     relation_name="attributes",
-                    condition=Q(attributes__assignment_id__in=attribute_associations),
+                    condition=Q(attributes__in=attribute_associations),
                 ),
                 # Implicit `GROUP BY` required for the `StringAgg` aggregation
                 grouped_ids=Count("id"),

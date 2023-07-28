@@ -1116,7 +1116,7 @@ def test_products_with_variants_query_as_app(
         }
     """
     product = product_with_multiple_values_attributes
-    attribute = product.attributes.first().attribute
+    attribute = product.attributes.first()
     attribute.visible_in_storefront = False
     attribute.save()
     second_product = product
