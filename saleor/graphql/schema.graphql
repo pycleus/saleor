@@ -1725,6 +1725,9 @@ enum WebhookEventTypeEnum @doc(category: "Webhooks") {
   """Account email change is requested."""
   ACCOUNT_CHANGE_EMAIL_REQUESTED
 
+  """Account set password is requested."""
+  ACCOUNT_SET_PASSWORD_REQUESTED
+
   """An account is confirmed."""
   ACCOUNT_CONFIRMED
 
@@ -2377,6 +2380,9 @@ enum WebhookEventTypeAsyncEnum @doc(category: "Webhooks") {
 
   """Account email change is requested."""
   ACCOUNT_CHANGE_EMAIL_REQUESTED
+
+  """Account set password is requested."""
+  ACCOUNT_SET_PASSWORD_REQUESTED
 
   """An account is confirmed."""
   ACCOUNT_CONFIRMED
@@ -3386,6 +3392,7 @@ scalar JSONString
 enum WebhookSampleEventTypeEnum @doc(category: "Webhooks") {
   ACCOUNT_CONFIRMATION_REQUESTED
   ACCOUNT_CHANGE_EMAIL_REQUESTED
+  ACCOUNT_SET_PASSWORD_REQUESTED
   ACCOUNT_CONFIRMED
   ACCOUNT_DELETE_REQUESTED
   ACCOUNT_DELETED
@@ -17893,6 +17900,7 @@ type Mutation {
   
   Triggers the following webhook events:
   - NOTIFY_USER (async): A notification for password reset.
+  - ACCOUNT_SET_PASSWORD_REQUESTED (async): Setting a new password for the account is requested.
   """
   requestPasswordReset(
     """
@@ -17907,7 +17915,7 @@ type Mutation {
     URL of a view where users should be redirected to reset the password. URL in RFC 1808 format.
     """
     redirectUrl: String!
-  ): RequestPasswordReset @doc(category: "Users") @webhookEventsInfo(asyncEvents: [NOTIFY_USER], syncEvents: [])
+  ): RequestPasswordReset @doc(category: "Users") @webhookEventsInfo(asyncEvents: [NOTIFY_USER, ACCOUNT_SET_PASSWORD_REQUESTED], syncEvents: [])
 
   """
   Sends a notification confirmation.
@@ -18211,11 +18219,12 @@ type Mutation {
   - CUSTOMER_CREATED (async): A new customer account was created.
   - CUSTOMER_METADATA_UPDATED (async): Optionally called when customer's metadata was updated.
   - NOTIFY_USER (async): A notification for setting the password.
+  - ACCOUNT_SET_PASSWORD_REQUESTED (async): Setting a new password for the account is requested.
   """
   customerCreate(
     """Fields required to create a customer."""
     input: UserCreateInput!
-  ): CustomerCreate @doc(category: "Users") @webhookEventsInfo(asyncEvents: [CUSTOMER_CREATED, CUSTOMER_METADATA_UPDATED, NOTIFY_USER], syncEvents: [])
+  ): CustomerCreate @doc(category: "Users") @webhookEventsInfo(asyncEvents: [CUSTOMER_CREATED, CUSTOMER_METADATA_UPDATED, NOTIFY_USER, ACCOUNT_SET_PASSWORD_REQUESTED], syncEvents: [])
 
   """
   Updates an existing customer. 
@@ -28099,8 +28108,9 @@ Sends an email with the account password modification link.
 
 Triggers the following webhook events:
 - NOTIFY_USER (async): A notification for password reset.
+- ACCOUNT_SET_PASSWORD_REQUESTED (async): Setting a new password for the account is requested.
 """
-type RequestPasswordReset @doc(category: "Users") @webhookEventsInfo(asyncEvents: [NOTIFY_USER], syncEvents: []) {
+type RequestPasswordReset @doc(category: "Users") @webhookEventsInfo(asyncEvents: [NOTIFY_USER, ACCOUNT_SET_PASSWORD_REQUESTED], syncEvents: []) {
   accountErrors: [AccountError!]! @deprecated(reason: "This field will be removed in Saleor 4.0. Use `errors` field instead.")
   errors: [AccountError!]!
 }
@@ -28462,8 +28472,9 @@ Triggers the following webhook events:
 - CUSTOMER_CREATED (async): A new customer account was created.
 - CUSTOMER_METADATA_UPDATED (async): Optionally called when customer's metadata was updated.
 - NOTIFY_USER (async): A notification for setting the password.
+- ACCOUNT_SET_PASSWORD_REQUESTED (async): Setting a new password for the account is requested.
 """
-type CustomerCreate @doc(category: "Users") @webhookEventsInfo(asyncEvents: [CUSTOMER_CREATED, CUSTOMER_METADATA_UPDATED, NOTIFY_USER], syncEvents: []) {
+type CustomerCreate @doc(category: "Users") @webhookEventsInfo(asyncEvents: [CUSTOMER_CREATED, CUSTOMER_METADATA_UPDATED, NOTIFY_USER, ACCOUNT_SET_PASSWORD_REQUESTED], syncEvents: []) {
   accountErrors: [AccountError!]! @deprecated(reason: "This field will be removed in Saleor 4.0. Use `errors` field instead.")
   errors: [AccountError!]!
   user: User
@@ -29179,6 +29190,40 @@ type AccountChangeEmailRequested implements Event @doc(category: "Users") {
 
   """The new email address the user wants to change to."""
   newEmail: String
+}
+
+"""
+Event sent when setting a new password is requested.
+
+Added in Saleor 3.15.
+"""
+type AccountSetPasswordRequested implements Event {
+  """Time of the event."""
+  issuedAt: DateTime
+
+  """Saleor version that triggered the event."""
+  version: String
+
+  """The user or application that triggered the event."""
+  issuingPrincipal: IssuingPrincipal
+
+  """The application receiving the webhook."""
+  recipient: App
+
+  """The URL to redirect the user after he accepts the request."""
+  redirectUrl: String
+
+  """The user the event relates to."""
+  user: User
+
+  """The channel data."""
+  channel: Channel
+
+  """The token required to confirm request."""
+  token: String
+
+  """Shop data."""
+  shop: Shop
 }
 
 """
